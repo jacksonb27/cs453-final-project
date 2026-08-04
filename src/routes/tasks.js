@@ -15,9 +15,7 @@ function part3NotImplemented(req, res, next) {
 
 tasksRouter.get(
     "/",
-    // TODO(PART 3): Replace part3NotImplemented with the required
-    // authentication and role-authorization middleware.
-    part3NotImplemented,
+    authenticateToken,
     (req, res) => {
       res.json({
         userId: req.user.sub,
@@ -27,21 +25,35 @@ tasksRouter.get(
 );
 
 tasksRouter.get('/:id',
-    part3NotImplemented,
-    // TODO(PART 4): Add the required authentication and authorization middleware.
+    authenticateToken,
+    requireRole("instructor", "student"),
     async (req, res, next) => {
-  // TODO(PART 4): Query req.params.id with parameterized SQL using db.query(sql, parameters).
-  // TODO(PART 4): Return 404 when no task exists, allow instructors, and check student ownership.
-  // TODO(PART 4): Return 403 for another student's task; return the task on success.
-  // req.params.id, req.user.sub, req.user.role, db.query(), and next(error) are available here.
-  return res.status(501).json({ error: 'Task-by-ID is not implemented yet.' });
-});
+      try {
+        const sql = "SELECT id, title, course, student_id AS studentId, completed FROM tasks WHERE id = ?";
+        const result = await db.query(sql, [req.params.id]);
+        const task = result.rows[0];
+
+        if (task == undefined) {
+          return res.status(404).json({ error: "Not Found" });
+        }
+
+        if (req.user.role == "student" && task.studentId != req.user.sub) {
+          return res.status(403).json({ error: "Forbidden" });
+        }
+
+        return res.status(200).json({
+          ...task,
+          completed: Boolean(task.completed)
+        });
+      } catch (error) {
+        return next(error);
+      }
+    });
 
 tasksRouter.delete(
     "/:id",
-    // TODO(PART 3): Replace part3NotImplemented with authentication
-    // and instructor-only authorization middleware.
-    part3NotImplemented,
+    authenticateToken,
+    requireRole("instructor"),
     async (req, res, next) => {
       try {
         const result = await db.run(
