@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: Course Task Tracker API
+  version: 1.0.0
+servers:
+  - url: https://api.test.com
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        course:
+          type: string
+        studentId:
+          type: string
+        completed:
+          type: boolean
+
+paths:
+  /tasks/{id}:
+    get:
+      summary: Get a task by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Missing, expired, or invalid token
+        '403':
+          description: Student attempting to access another student's task
+        '404':
+          description: Task not found
+    delete:
+      summary: Delete a task ("instructor" role only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No content
+        '401':
+          description: Missing, expired, or invalid token
+        '403':
+          description: User is not an "instructor" role
+        '404':
+          description: Task not found
+  /tasks:
+    get:
+      summary: Get all tasks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lists all tasks in database
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+        '401':
+          description: Missing, expired, or invalid token
+    post:
+      summary: Create a task
+      security:
+         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  course:
+                    type: string
+      responses:
+        '201':
+          description: Creates a task 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Missing, expired, or invalid token
+        '400':
+          description: Bad request, missing field(s)/parameter(s)
+  /reports:
+    post:
+      summary: Submit a report job
+      security:
+        - bearerAuth: []
+      responses:
+        '202':
+          description: Creates a job report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+                  statusUrl:
+                    type: string
+        '401':
+          description: Missing, expired, or invalid token
+  /reports/{id}:
+    get:
+      summary: Get report job status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Gets status of job report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  studentId:
+                    type: string
+                  status:
+                    type: string
+                  downloadUrl:
+                    type: string
+        '401':
+          description: Missing, expired, or invalid token
+        '404':
+          description: Job request not found
